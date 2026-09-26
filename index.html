@@ -44,6 +44,7 @@
         const R2_URL = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev";
         const WORKER_URL = "https://pdf-translator.marek-bd6.workers.dev";
         const PDF_FILE = "legal/WZON-2026-MAREK_ALEX_S-0001.pdf";
+        const GITHUB_RAW = "https://raw.githubusercontent.com/mszewczy/skany/main";
         
         function detectPDFVersion() {
             const hasWasm = typeof WebAssembly !== "undefined";
@@ -55,7 +56,10 @@
         document.getElementById("pdfVersion").innerText = version.toUpperCase();
         
         const pdfUrl = R2_URL + "/" + PDF_FILE;
-        const viewerUrl = `/web/pdf-${version}/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+        const viewerUrl = `${GITHUB_RAW}/web/pdf-${version}/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
+        
+        console.log("PDF URL:", pdfUrl);
+        console.log("Viewer URL:", viewerUrl);
         
         document.getElementById("pdfViewer").src = viewerUrl;
 
