@@ -1,28 +1,164 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer - Skany</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/web/pdf_viewer.min.css">
-    <style>
-        body { margin: 0; padding: 0; }
-        #viewer { width: 100%; height: 100vh; }
-    </style>
+<meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Archiwum PDF - Skany</title>
+<link rel="icon" href="favicon.ico">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
+    font-family: "Segoe UI", Arial, sans-serif; background: #f2f2f2; color: #222; }
+  #bar { position: absolute; top: 0; left: 0; right: 0; height: 40px; line-height: 40px;
+    padding: 0 12px; background: #2b2b2b; color: #fff; font-size: 14px; overflow: hidden;
+    white-space: nowrap; }
+  #bar a { color: #9cd0ff; margin-left: 12px; }
+  #status { color: #bbb; margin-left: 12px; font-size: 12px; }
+  #frame { position: absolute; top: 40px; left: 0; right: 0; bottom: 0;
+    width: 100%; height: 100%; height: calc(100% - 40px); border: 0; background: #fff; }
+  #msg { position: absolute; top: 40px; left: 0; right: 0; padding: 24px; font-size: 16px;
+    line-height: 1.5; display: none; background: #fff; }
+  #msg a { color: #0645ad; font-weight: bold; }
+</style>
 </head>
 <body>
-    <div id="viewer"></div>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/web/pdf_viewer.min.js"></script>
-    <script>
-        // BRAK storage access — bez Tracking Prevention blokady
-        const pdfUrl = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev/legal/WZON-2026-MAREK_ALEX_S-0001.pdf";
-        
-        pdfjsLib.getDocument(pdfUrl).promise.then(pdf => {
-            // Render PDF
-            const viewer = new pdfjsViewer.PDFViewer({ container: document.getElementById('viewer') });
-            viewer.pdfDocument = pdf;
-        });
-    </script>
+<div id="bar">
+  <strong>Archiwum PDF</strong>
+  <span id="status">Ładowanie...</span>
+  <a id="direct" href="#" target="_blank" rel="noopener" style="display:none">Otwórz plik bezpośrednio</a>
+</div>
+<div id="msg"></div>
+<noscript>
+  <div style="position:absolute;top:40px;padding:24px;background:#fff">
+    JavaScript jest wyłączony. Dodaj do adresu parametr <code>?file=</code> i otwórz plik
+    bezpośrednio z archiwum: https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev/&lt;ścieżka&gt;.pdf
+  </div>
+</noscript>
+<iframe id="frame" title="Podgląd dokumentu PDF" style="display:none"></iframe>
+
+<script>
+/* Kod celowo w ES3 (var, function, bez => ` const), aby dzialal w kazdej przegladarce. */
+(function () {
+  var R2_BASE = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev/";
+  var VIEWERS = {
+    modern: "web/pdf-modern/web/viewer.html",
+    legacy: "web/pdf-legacy/web/viewer.html"
+  };
+  var START_TIMEOUT_MS = 20000;  /* czas na uruchomienie PDF.js (stary sprzet) */
+  var LOAD_TIMEOUT_MS  = 60000;  /* czas na pobranie i otwarcie dokumentu */
+
+  var frame  = document.getElementById("frame");
+  var status = document.getElementById("status");
+  var direct = document.getElementById("direct");
+  var msg    = document.getElementById("msg");
+
+  function setStatus(t) { status.innerHTML = ""; status.appendChild(document.createTextNode(t)); }
+
+  function showMessage(html) {
+    frame.style.display = "none";
+    msg.innerHTML = html;
+    msg.style.display = "block";
+  }
+
+  /* 1. Odczyt parametru ?file= (zmienna osadzona w linku w dokumencie) */
+  function getParam(name) {
+    var q = window.location.search.substring(1).split("&");
+    for (var i = 0; i < q.length; i++) {
+      var p = q[i].split("=");
+      if (p[0] === name && p.length > 1) {
+        try { return decodeURIComponent(p.slice(1).join("=").replace(/\+/g, " ")); }
+        catch (e) { return null; }
+      }
+    }
+    return null;
+  }
+
+  /* 2. Walidacja: tylko sciezki wewnatrz bucketu R2, tylko .pdf */
+  function isSafePath(p) {
+    if (!p || p.length > 300) { return false; }
+    if (p.indexOf("..") !== -1 || p.indexOf("//") !== -1) { return false; }
+    return /^[A-Za-z0-9][A-Za-z0-9._\-\/]*\.pdf$/i.test(p);
+  }
+
+  var filePath = getParam("file");
+  if (!isSafePath(filePath)) {
+    setStatus("Brak lub niepoprawny parametr file");
+    showMessage("Nie wskazano poprawnego pliku.<br>Przykład adresu:<br>" +
+      "<code>https://mszewczy.github.io/skany/?file=legal/NAZWA-PLIKU.pdf</code>");
+    return;
+  }
+
+  var pdfUrl = R2_BASE + filePath;
+  direct.href = pdfUrl;
+  direct.style.display = "inline";
+  var name = filePath.substring(filePath.lastIndexOf("/") + 1);
+  document.title = name + " - Archiwum PDF";
+
+  /* 3. Wykrycie mozliwosci przegladarki */
+  function supportsModules() {
+    try { return "noModule" in document.createElement("script"); } catch (e) { return false; }
+  }
+  function supportsModernBuild() {
+    try {
+      return supportsModules() &&
+        typeof Promise !== "undefined" && typeof Promise.withResolvers === "function" &&
+        typeof URL !== "undefined" && typeof URL.parse === "function" &&
+        typeof Map !== "undefined" && typeof Map.prototype.getOrInsertComputed === "function";
+    } catch (e) { return false; }
+  }
+
+  var stages = [];
+  if (supportsModernBuild()) { stages.push("modern"); }
+  if (supportsModules())     { stages.push("legacy"); }
+
+  /* 4. Ostatnia deska ratunku: bezposredni link (natywny podglad przegladarki) */
+  function fallbackDirect(reason) {
+    setStatus(reason);
+    showMessage(reason + "<br><br>" +
+      "<a href=\"" + pdfUrl + "\" target=\"_blank\" rel=\"noopener\">Kliknij, aby otworzyć plik " +
+      name + "</a><br><small>Plik otworzy się we wbudowanym podglądzie przeglądarki lub zostanie pobrany.</small>");
+  }
+
+  /* 5. Uruchomienie kolejnych wersji PDF.js z nadzorem (watchdog) */
+  function tryStage(index) {
+    if (index >= stages.length) {
+      fallbackDirect("Ta przeglądarka nie uruchomiła podglądu PDF.js.");
+      return;
+    }
+    var version = stages[index];
+    var started = new Date().getTime();
+    setStatus("PDF.js: " + version.toUpperCase() + " - uruchamianie...");
+    frame.style.display = "block";
+    frame.src = VIEWERS[version] + "?file=" + encodeURIComponent(pdfUrl);
+
+    var viewerReadyAt = 0;
+    var timer = setInterval(function () {
+      var app = null;
+      try { app = frame.contentWindow.PDFViewerApplication; } catch (e) { app = null; }
+      var now = new Date().getTime();
+
+      if (app && app.pdfDocument) {
+        clearInterval(timer);
+        setStatus("PDF.js: " + version.toUpperCase() + " - " + name);
+        return;
+      }
+      if (app && app.initialized) {
+        if (!viewerReadyAt) { viewerReadyAt = now; setStatus("PDF.js: " + version.toUpperCase() + " - pobieranie pliku..."); }
+        if (now - viewerReadyAt > LOAD_TIMEOUT_MS) {
+          clearInterval(timer);
+          setStatus("Nie udało się pobrać pliku w podglądzie - użyj linku obok");
+        }
+        return;
+      }
+      if (now - started > START_TIMEOUT_MS) {
+        clearInterval(timer);
+        tryStage(index + 1);
+      }
+    }, 500);
+  }
+
+  tryStage(0);
+})();
+</script>
 </body>
 </html>
