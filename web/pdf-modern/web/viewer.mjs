@@ -3095,7 +3095,7 @@ class SignatureStorage {
     this.#signal = signal;
   }
   #save() {
-    localStorage.setItem(KEY_STORAGE, JSON.stringify(Object.fromEntries(this.#signatures)));
+    sessionStorage.setItem(KEY_STORAGE, JSON.stringify(Object.fromEntries(this.#signatures)));
   }
   async getAll() {
     if (this.#signal) {
@@ -3115,7 +3115,7 @@ class SignatureStorage {
     }
     if (!this.#signatures) {
       this.#signatures = new Map();
-      const data = localStorage.getItem(KEY_STORAGE);
+      const data = sessionStorage.getItem(KEY_STORAGE);
       if (data) {
         for (const [key, value] of Object.entries(JSON.parse(data))) {
           this.#signatures.set(key, value);
@@ -3160,11 +3160,11 @@ class SignatureStorage {
 function initCom(app) {}
 class Preferences extends BasePreferences {
   async _writeToStorage(prefObj) {
-    localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
+    sessionStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
   async _readFromStorage(prefObj) {
     return {
-      prefs: JSON.parse(localStorage.getItem("pdfjs.preferences"))
+      prefs: JSON.parse(sessionStorage.getItem("pdfjs.preferences"))
     };
   }
 }
@@ -18442,10 +18442,10 @@ class ViewHistory {
   }
   async _writeToStorage() {
     const databaseStr = JSON.stringify(this.database);
-    localStorage.setItem("pdfjs.history", databaseStr);
+    sessionStorage.setItem("pdfjs.history", databaseStr);
   }
   async _readFromStorage() {
-    return localStorage.getItem("pdfjs.history");
+    return sessionStorage.getItem("pdfjs.history");
   }
   async set(name, val) {
     await this._initializedPromise;
