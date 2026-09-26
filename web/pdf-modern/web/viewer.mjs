@@ -3095,7 +3095,7 @@ class SignatureStorage {
     this.#signal = signal;
   }
   #save() {
-    sessionStorage.setItem(KEY_STORAGE, JSON.stringify(Object.fromEntries(this.#signatures)));
+    localStorage.setItem(KEY_STORAGE, JSON.stringify(Object.fromEntries(this.#signatures)));
   }
   async getAll() {
     if (this.#signal) {
@@ -3115,7 +3115,7 @@ class SignatureStorage {
     }
     if (!this.#signatures) {
       this.#signatures = new Map();
-      const data = sessionStorage.getItem(KEY_STORAGE);
+      const data = localStorage.getItem(KEY_STORAGE);
       if (data) {
         for (const [key, value] of Object.entries(JSON.parse(data))) {
           this.#signatures.set(key, value);
@@ -3160,11 +3160,11 @@ class SignatureStorage {
 function initCom(app) {}
 class Preferences extends BasePreferences {
   async _writeToStorage(prefObj) {
-    sessionStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
+    localStorage.setItem("pdfjs.preferences", JSON.stringify(prefObj));
   }
   async _readFromStorage(prefObj) {
     return {
-      prefs: JSON.parse(sessionStorage.getItem("pdfjs.preferences"))
+      prefs: JSON.parse(localStorage.getItem("pdfjs.preferences"))
     };
   }
 }
@@ -18442,10 +18442,10 @@ class ViewHistory {
   }
   async _writeToStorage() {
     const databaseStr = JSON.stringify(this.database);
-    sessionStorage.setItem("pdfjs.history", databaseStr);
+    localStorage.setItem("pdfjs.history", databaseStr);
   }
   async _readFromStorage() {
-    return sessionStorage.getItem("pdfjs.history");
+    return localStorage.getItem("pdfjs.history");
   }
   async set(name, val) {
     await this._initializedPromise;
@@ -20467,7 +20467,9 @@ PDFPrintServiceFactory.initGlobals(PDFViewerApplication);
       return;
     }
     const fileOrigin = URL.parse(file, window.location)?.origin;
-    if (fileOrigin === viewerOrigin) {
+    // SKANY: dopuszczone zrodla plikow PDF (bucket R2)
+    const SKANY_FILE_ORIGINS = new Set(["https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev"]);
+    if (fileOrigin === viewerOrigin || SKANY_FILE_ORIGINS.has(fileOrigin)) {
       return;
     }
     const ex = new Error("file origin does not match viewer's");
