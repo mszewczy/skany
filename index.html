@@ -3,176 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Viewer - Skany</title>
+    <title>Archiwum PDF - Skany</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-        }
-        .container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-        }
-        .header {
-            background: #222;
-            padding: 15px 20px;
-            border-bottom: 1px solid #444;
-            display: flex;
-            justify-content: space-between;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #333; color: #fff; }
+        #top-bar { 
+            padding: 15px 20px; 
+            background: #222; 
+            display: flex; 
+            justify-content: space-between; 
             align-items: center;
+            border-bottom: 1px solid #444;
         }
-        .header h1 {
-            font-size: 20px;
-            font-weight: 600;
-        }
-        .browser-info {
-            font-size: 12px;
-            color: #888;
-            text-align: right;
-        }
-        .viewer-container {
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        iframe {
-            width: 100%;
-            height: 100%;
+        #top-bar strong { font-size: 18px; }
+        #viewer-info { text-align: right; font-size: 12px; }
+        #viewer-container { 
+            width: 100vw; 
+            height: calc(100vh - 50px); 
             border: none;
         }
-        .loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #666;
+        .btn-translate { 
+            background: #0070f3; 
+            color: white; 
+            border: none; 
+            padding: 8px 15px; 
+            border-radius: 4px; 
+            cursor: pointer;
+            margin-left: 10px;
         }
+        .btn-translate:hover { background: #0051a2; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>📄 PDF Viewer</h1>
-            <div class="browser-info">
-                <div id="versionInfo"></div>
-            </div>
-        </div>
-        <div class="viewer-container">
-            <div class="loading" id="loading">Ładowanie przeglądarki PDF...</div>
-            <iframe id="pdfViewer" src="" style="display:none;"></iframe>
-        </div>
+
+<div id="top-bar">
+    <div><strong>📄 Archiwum PDF</strong></div>
+    <div id="viewer-info">
+        Język: <span id="user-lang">PL</span>
+        <button class="btn-translate" onclick="translateDocument()">Tłumacz</button>
     </div>
+</div>
 
-    <script>
-        // Konfiguracja ścieżek PDF.js
-        const PDF_PATHS = {
-            modern: '/web/pdf-modern/web/viewer.html',
-            legacy: '/web/pdf-legacy/web/viewer.html'
+<iframe id="viewer-container" src=""></iframe>
+
+<script>
+    // Detekcja wersji PDF.js
+    function detectPDFVersion() {
+        const capabilities = {
+            hasModules: false,
+            hasAsync: false,
+            hasWasm: false
         };
+        
+        try {
+            new Function('import("").catch(()=>0)');
+            capabilities.hasModules = true;
+        } catch (e) {}
+        
+        try {
+            eval('(async () => {})');
+            capabilities.hasAsync = true;
+        } catch (e) {}
+        
+        capabilities.hasWasm = typeof WebAssembly !== 'undefined';
+        
+        return (capabilities.hasModules && capabilities.hasAsync && capabilities.hasWasm) 
+            ? 'modern' : 'legacy';
+    }
 
-        // Detekcja możliwości przeglądarki
-        function detectBrowserCapabilities() {
-            const capabilities = {
-                hasModuleSupport: false,
-                hasAsyncAwait: false,
-                hasWebAssembly: false,
-                hasWorkers: false,
-                browserName: 'Unknown',
-                version: 'Unknown'
-            };
+    // Parametry URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const pdfFile = urlParams.get('file') || 'sample.pdf';
+    const version = detectPDFVersion();
+    const pdfPath = `/web/pdf-${version}/web/viewer.html?file=${encodeURIComponent(pdfFile)}`;
 
-            // Test ES6 Module support
-            try {
-                new Function('import("").catch(()=>0)');
-                capabilities.hasModuleSupport = true;
-            } catch (e) {
-                capabilities.hasModuleSupport = false;
-            }
+    // Ładowanie
+    document.getElementById('viewer-container').src = pdfPath;
 
-            // Test async/await
-            try {
-                eval('(async () => {})');
-                capabilities.hasAsyncAwait = true;
-            } catch (e) {
-                capabilities.hasAsyncAwait = false;
-            }
+    // Detekcja języka
+    const userLang = (navigator.language || navigator.userLanguage).split('-')[0].toUpperCase();
+    document.getElementById('user-lang').innerText = userLang;
 
-            // Test WebAssembly
-            capabilities.hasWebAssembly = typeof WebAssembly !== 'undefined';
+    // Funkcja tłumaczenia (stub)
+    async function translateDocument() {
+        alert(`Tłumaczenie dla języka: ${userLang} (funkcja w przygotowaniu)`);
+    }
+</script>
 
-            // Test Web Workers
-            capabilities.hasWorkers = typeof Worker !== 'undefined';
-
-            // Browser detection
-            const ua = navigator.userAgent;
-            if (ua.indexOf('Firefox') > -1) {
-                capabilities.browserName = 'Firefox';
-                const match = ua.match(/Firefox\/(\d+)/);
-                capabilities.version = match ? match[1] : 'Unknown';
-            } else if (ua.indexOf('Chrome') > -1) {
-                capabilities.browserName = 'Chrome';
-                const match = ua.match(/Chrome\/(\d+)/);
-                capabilities.version = match ? match[1] : 'Unknown';
-            } else if (ua.indexOf('Safari') > -1) {
-                capabilities.browserName = 'Safari';
-                const match = ua.match(/Version\/(\d+)/);
-                capabilities.version = match ? match[1] : 'Unknown';
-            } else if (ua.indexOf('Edge') > -1) {
-                capabilities.browserName = 'Edge';
-                const match = ua.match(/Edge\/(\d+)/);
-                capabilities.version = match ? match[1] : 'Unknown';
-            }
-
-            return capabilities;
-        }
-
-        // Wybór wersji PDF.js
-        function selectPDFVersion(capabilities) {
-            // Kryteria dla wersji nowoczesnej (modern)
-            const useModern =
-                capabilities.hasModuleSupport &&
-                capabilities.hasAsyncAwait &&
-                capabilities.hasWebAssembly &&
-                capabilities.hasWorkers;
-
-            return useModern ? 'modern' : 'legacy';
-        }
-
-        // Główna inicjalizacja
-        function initPDFViewer() {
-            const capabilities = detectBrowserCapabilities();
-            const version = selectPDFVersion(capabilities);
-            const viewerPath = PDF_PATHS[version];
-
-            // Wyświetl informacje o przeglądarce
-            const versionInfo = document.getElementById('versionInfo');
-            versionInfo.innerHTML = `
-                <strong>${capabilities.browserName} ${capabilities.version}</strong><br>
-                Wersja PDF.js: <strong>${version.toUpperCase()}</strong><br>
-                <small>Moduły ES6: ${capabilities.hasModuleSupport ? '✓' : '✗'} |
-                Async/Await: ${capabilities.hasAsyncAwait ? '✓' : '✗'} |
-                WASM: ${capabilities.hasWebAssembly ? '✓' : '✗'}</small>
-            `;
-
-            // Załaduj viewer
-            const iframe = document.getElementById('pdfViewer');
-            iframe.src = viewerPath;
-            iframe.onload = function() {
-                document.getElementById('loading').style.display = 'none';
-                iframe.style.display = 'block';
-            };
-        }
-
-        // Start gdy DOM jest gotowy
-        document.addEventListener('DOMContentLoaded', initPDFViewer);
-    </script>
 </body>
 </html>
