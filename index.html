@@ -6,22 +6,17 @@
     <title>Archiwum PDF - Skany</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: sans-serif; background: #333; color: #fff; }
-        #top-bar { 
-            padding: 15px 20px; 
+        body { font-family: sans-serif; background: #1a1a1a; color: #fff; }
+        .header { 
             background: #222; 
-            display: flex; 
-            justify-content: space-between; 
-            align-items: center;
+            padding: 15px 20px; 
             border-bottom: 1px solid #444;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        #top-bar strong { font-size: 18px; }
-        #viewer-info { text-align: right; font-size: 12px; }
-        #viewer-container { 
-            width: 100vw; 
-            height: calc(100vh - 50px); 
-            border: none;
-        }
+        .header h2 { font-size: 18px; }
+        .header-info { text-align: right; font-size: 12px; line-height: 1.5; }
         .btn-translate { 
             background: #0070f3; 
             color: white; 
@@ -32,63 +27,81 @@
             margin-left: 10px;
         }
         .btn-translate:hover { background: #0051a2; }
+        #pdfViewer { width: 100vw; height: calc(100vh - 50px); border: none; }
     </style>
 </head>
 <body>
-
-<div id="top-bar">
-    <div><strong>📄 Archiwum PDF</strong></div>
-    <div id="viewer-info">
-        Język: <span id="user-lang">PL</span>
-        <button class="btn-translate" onclick="translateDocument()">Tłumacz</button>
+    <div class="header">
+        <h2>PDF Viewer - Skany</h2>
+        <div class="header-info">
+            <div>Language: <strong id="userLang">PL</strong> | PDF.js: <strong id="pdfVersion">MODERN</strong></div>
+            <button class="btn-translate" onclick="translateDocument()">Translate</button>
+        </div>
     </div>
-</div>
+    <iframe id="pdfViewer"></iframe>
 
-<iframe id="viewer-container" src=""></iframe>
-
-<script>
-    // Detekcja wersji PDF.js
-    function detectPDFVersion() {
-        const capabilities = {
-            hasModules: false,
-            hasAsync: false,
-            hasWasm: false
-        };
+    <script>
+        const R2_URL = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev";
+        const WORKER_URL = "https://pdf-translator.marek-bd6.workers.dev";
+        const PDF_FILE = "legal/WZON-2026-MAREK_ALEX_S-0001.pdf";
         
-        try {
-            new Function('import("").catch(()=>0)');
-            capabilities.hasModules = true;
-        } catch (e) {}
+        function detectPDFVersion() {
+            const hasWasm = typeof WebAssembly !== "undefined";
+            const hasAsync = true;
+            return (hasWasm && hasAsync) ? "modern" : "legacy";
+        }
+
+        const version = detectPDFVersion();
+        document.getElementById("pdfVersion").innerText = version.toUpperCase();
         
-        try {
-            eval('(async () => {})');
-            capabilities.hasAsync = true;
-        } catch (e) {}
+        const pdfUrl = R2_URL + "/" + PDF_FILE;
+        const viewerUrl = `/web/pdf-${version}/web/viewer.html?file=${encodeURIComponent(pdfUrl)}`;
         
-        capabilities.hasWasm = typeof WebAssembly !== 'undefined';
-        
-        return (capabilities.hasModules && capabilities.hasAsync && capabilities.hasWasm) 
-            ? 'modern' : 'legacy';
-    }
+        document.getElementById("pdfViewer").src = viewerUrl;
 
-    // Parametry URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const pdfFile = urlParams.get('file') || 'sample.pdf';
-    const version = detectPDFVersion();
-    const pdfPath = `/web/pdf-${version}/web/viewer.html?file=${encodeURIComponent(pdfFile)}`;
+        const userLang = (navigator.language || navigator.userLanguage).split("-")[0].toUpperCase();
+        document.getElementById("userLang").innerText = userLang;
 
-    // Ładowanie
-    document.getElementById('viewer-container').src = pdfPath;
+        async function translateDocument() {
+            const iframeDoc = document.getElementById("pdfViewer").contentDocument;
+            if (!iframeDoc) {
+                alert("PDF not loaded yet.");
+                return;
+            }
 
-    // Detekcja języka
-    const userLang = (navigator.language || navigator.userLanguage).split('-')[0].toUpperCase();
-    document.getElementById('user-lang').innerText = userLang;
+            const textLayers = iframeDoc.querySelectorAll(".textLayer span");
+            if (textLayers.length === 0) {
+                alert("No OCR text layer found in this document.");
+                return;
+            }
 
-    // Funkcja tłumaczenia (stub)
-    async function translateDocument() {
-        alert(`Tłumaczenie dla języka: ${userLang} (funkcja w przygotowaniu)`);
-    }
-</script>
+            const fullText = Array.from(textLayers).map(el => el.innerText).join(" ");
+            const sampleText = fullText.substring(0, 500);
 
+            try {
+                const response = await fetch(WORKER_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        text: sampleText,
+                        targetLang: userLang.toLowerCase(),
+                        sourceLang: "pl"
+                    })
+                });
+
+                const data = await response.json();
+                if (data.translated_text) {
+                    alert(`Translation:\n\n${data.translated_text}`);
+                } else if (data.error) {
+                    alert(`Error: ${data.error}`);
+                } else {
+                    alert("Translation service returned unexpected response.");
+                }
+            } catch (err) {
+                console.error(err);
+                alert("Translation service error: " + err.message);
+            }
+        }
+    </script>
 </body>
 </html>
