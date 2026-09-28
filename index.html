@@ -1,317 +1,439 @@
 <!DOCTYPE html>
 <html lang="pl">
+
 <head>
-<meta charset="utf-8">
-<meta http-equiv="X-UA-Compatible" content="IE=edge">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Archiwum PDF - Skany</title>
-<link rel="icon" href="favicon.ico">
-<style>
-  html, body { margin: 0; padding: 0; height: 100%; overflow: hidden;
-    font-family: "Segoe UI", Arial, sans-serif; background: #f2f2f2; color: #222; }
-  #bar { position: absolute; top: 0; left: 0; right: 0; height: 40px; line-height: 40px;
-    padding: 0 12px; background: #2b2b2b; color: #fff; font-size: 14px; overflow: hidden;
-    white-space: nowrap; }
-  #bar a { color: #9cd0ff; margin-left: 12px; }
-  #status { color: #bbb; margin-left: 12px; font-size: 12px; }
-  #tools { float: right; }
-  #tools select, #tools button { font-size: 13px; margin-left: 6px; vertical-align: middle; }
-  #tools button { background: #0a66c2; color: #fff; border: 0; padding: 5px 12px; cursor: pointer; }
-  #tools button[disabled] { background: #666; cursor: default; }
-  #frame { position: absolute; top: 40px; left: 0; right: 0; bottom: 0;
-    width: 100%; height: 100%; height: calc(100% - 40px); border: 0; background: #fff; }
-  #panel { position: absolute; top: 40px; right: 0; bottom: 0; width: 40%; display: none;
-    background: #fff; border-left: 2px solid #0a66c2; overflow: auto; padding: 0 16px 24px;
-    box-sizing: border-box; font-size: 15px; line-height: 1.55; }
-  #panel h2 { font-size: 15px; margin: 18px 0 6px; color: #0a66c2; }
-  #panel p { margin: 0 0 8px; }
-  #panelHead { position: sticky; top: 0; background: #fff; padding: 10px 0; border-bottom: 1px solid #ddd; }
-  #panelHead button { float: right; }
-  body.split #frame { width: 60%; }
-  body.split #panel { display: block; }
-  #msg { position: absolute; top: 40px; left: 0; right: 0; padding: 24px; font-size: 16px;
-    line-height: 1.5; display: none; background: #fff; }
-  #msg a { color: #0645ad; font-weight: bold; }
-</style>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Archiwum PDF - Skany</title>
+  <link rel="icon" href="favicon.ico">
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      overflow: hidden;
+      font-family: "Segoe UI", Arial, sans-serif;
+      background: #f2f2f2;
+      color: #222;
+    }
+
+    #bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 40px;
+      line-height: 40px;
+      padding: 0 12px;
+      background: #2b2b2b;
+      color: #fff;
+      font-size: 14px;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    #bar a {
+      color: #9cd0ff;
+      margin-left: 12px;
+    }
+
+    #status {
+      color: #bbb;
+      margin-left: 12px;
+      font-size: 12px;
+    }
+
+    #tools {
+      float: right;
+    }
+
+    #tools select,
+    #tools button {
+      font-size: 13px;
+      margin-left: 6px;
+      vertical-align: middle;
+    }
+
+    #tools button {
+      background: #0a66c2;
+      color: #fff;
+      border: 0;
+      padding: 5px 12px;
+      cursor: pointer;
+    }
+
+    #tools button[disabled] {
+      background: #666;
+      cursor: default;
+    }
+
+    #frame {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100%;
+      height: calc(100% - 40px);
+      border: 0;
+      background: #fff;
+    }
+
+    #panel {
+      position: absolute;
+      top: 40px;
+      right: 0;
+      bottom: 0;
+      width: 40%;
+      display: none;
+      background: #fff;
+      border-left: 2px solid #0a66c2;
+      overflow: auto;
+      padding: 0 16px 24px;
+      box-sizing: border-box;
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    #panel h2 {
+      font-size: 15px;
+      margin: 18px 0 6px;
+      color: #0a66c2;
+    }
+
+    #panel p {
+      margin: 0 0 8px;
+    }
+
+    #panelHead {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      padding: 10px 0;
+      border-bottom: 1px solid #ddd;
+    }
+
+    #panelHead button {
+      float: right;
+    }
+
+    body.split #frame {
+      width: 60%;
+    }
+
+    body.split #panel {
+      display: block;
+    }
+
+    #msg {
+      position: absolute;
+      top: 40px;
+      left: 0;
+      right: 0;
+      padding: 24px;
+      font-size: 16px;
+      line-height: 1.5;
+      display: none;
+      background: #fff;
+    }
+
+    #msg a {
+      color: #0645ad;
+      font-weight: bold;
+    }
+  </style>
 </head>
+
 <body>
-<div id="bar">
-  <strong>Archiwum PDF</strong>
-  <span id="status">Ładowanie...</span>
-  <a id="direct" href="#" target="_blank" rel="noopener" style="display:none">Otwórz plik bezpośrednio</a>
-  <span id="tools">
-    <label for="srcLang">z</label>
-    <select id="srcLang">
-      <option value="pl" selected>polskiego</option><option value="en">angielskiego</option>
-      <option value="de">niemieckiego</option><option value="uk">ukraińskiego</option>
-    </select>
-    <label for="dstLang">na</label>
-    <select id="dstLang">
-      <option value="en" selected>angielski</option><option value="de">niemiecki</option>
-      <option value="uk">ukraiński</option><option value="fr">francuski</option>
-      <option value="es">hiszpański</option><option value="it">włoski</option>
-      <option value="ru">rosyjski</option><option value="pl">polski</option>
-    </select>
-    <button id="translateBtn" type="button" disabled>Tłumacz</button>
-  </span>
-</div>
-<div id="msg"></div>
-<noscript>
-  <div style="position:absolute;top:40px;padding:24px;background:#fff">
-    Podgląd i tłumaczenie wymagają włączonego JavaScriptu.
+  <div id="bar">
+    <strong>Archiwum PDF</strong>
+    <span id="status">Ładowanie...</span>
+    <a id="direct" href="#" target="_blank" rel="noopener" style="display:none">Otwórz plik bezpośrednio</a>
+    <span id="tools">
+      <label for="srcLang">z</label>
+      <select id="srcLang">
+        <option value="pl" selected>polskiego</option>
+        <option value="en">angielskiego</option>
+        <option value="de">niemieckiego</option>
+        <option value="uk">ukraińskiego</option>
+      </select>
+      <label for="dstLang">na</label>
+      <select id="dstLang">
+        <option value="en" selected>angielski</option>
+        <option value="de">niemiecki</option>
+        <option value="uk">ukraiński</option>
+        <option value="fr">francuski</option>
+        <option value="es">hiszpański</option>
+        <option value="it">włoski</option>
+        <option value="ru">rosyjski</option>
+        <option value="pl">polski</option>
+      </select>
+      <button id="translateBtn" type="button" disabled>Tłumacz</button>
+    </span>
   </div>
-</noscript>
-<iframe id="frame" title="Podgląd dokumentu PDF" style="display:none"></iframe>
-<div id="panel" aria-live="polite">
-  <div id="panelHead"><strong id="panelTitle">Tłumaczenie</strong>
-    <button id="closeBtn" type="button">Zamknij</button></div>
-  <div id="panelBody"></div>
-</div>
+  <div id="msg"></div>
+  <noscript>
+    <div style="position:absolute;top:40px;padding:24px;background:#fff">
+      Podgląd i tłumaczenie wymagają włączonego JavaScriptu.
+    </div>
+  </noscript>
+  <iframe id="frame" title="Podgląd dokumentu PDF" style="display:none"></iframe>
+  <div id="panel" aria-live="polite">
+    <div id="panelHead"><strong id="panelTitle">Tłumaczenie</strong>
+      <button id="closeBtn" type="button">Zamknij</button>
+    </div>
+    <div id="panelBody"></div>
+  </div>
 
-<script>
-/* Kod celowo w ES3/ES5 (var, function, bez => ` const), aby sam router dzialal w kazdej przegladarce. */
-(function () {
-  var R2_BASE = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev/";
-  var WORKER_URL = "https://pdf-translator.marek-bd6.workers.dev/";
-  var VIEWERS = {
-    modern: "web/pdf-modern/web/viewer.html",
-    legacy: "web/pdf-legacy/web/viewer.html"
-  };
-  var START_TIMEOUT_MS = 20000;   /* czas na uruchomienie PDF.js (stary sprzet) */
-  var LOAD_TIMEOUT_MS  = 60000;   /* czas na pobranie i otwarcie dokumentu */
-  var CHUNK_MAX = 350;            /* M2M100 gubi tresc przy dlugich fragmentach */
+  <script>
+    /* Kod celowo w ES3/ES5 (var, function, bez => ` const), aby sam router dzialal w kazdej przegladarce. */
+    (function () {
+      var R2_BASE = "https://pub-b8402fa0ed704c62ac446d52c2efacbb.r2.dev/";
+      var WORKER_URL = "https://pdf-translator.marek-bd6.workers.dev/";
+      var VIEWERS = {
+        modern: "web/pdf-modern/web/viewer.html",
+        legacy: "web/pdf-legacy/web/viewer.html"
+      };
+      var START_TIMEOUT_MS = 20000;   /* czas na uruchomienie PDF.js (stary sprzet) */
+      var LOAD_TIMEOUT_MS = 60000;   /* czas na pobranie i otwarcie dokumentu */
+      var CHUNK_MAX = 350;            /* M2M100 gubi tresc przy dlugich fragmentach */
 
-  var frame  = document.getElementById("frame");
-  var status = document.getElementById("status");
-  var direct = document.getElementById("direct");
-  var msg    = document.getElementById("msg");
-  var btn    = document.getElementById("translateBtn");
-  var panelBody = document.getElementById("panelBody");
-  var panelTitle = document.getElementById("panelTitle");
+      var frame = document.getElementById("frame");
+      var status = document.getElementById("status");
+      var direct = document.getElementById("direct");
+      var msg = document.getElementById("msg");
+      var btn = document.getElementById("translateBtn");
+      var panelBody = document.getElementById("panelBody");
+      var panelTitle = document.getElementById("panelTitle");
 
-  var app = null;          /* PDFViewerApplication z ramki (ta sama domena) */
-  var busy = false;
+      var app = null;          /* PDFViewerApplication z ramki (ta sama domena) */
+      var busy = false;
 
-  function text(el, t) { el.innerHTML = ""; el.appendChild(document.createTextNode(t)); }
-  function setStatus(t) { text(status, t); }
-  function showMessage(html) { frame.style.display = "none"; msg.innerHTML = html; msg.style.display = "block"; }
+      function text(el, t) { el.innerHTML = ""; el.appendChild(document.createTextNode(t)); }
+      function setStatus(t) { text(status, t); }
+      function showMessage(html) { frame.style.display = "none"; msg.innerHTML = html; msg.style.display = "block"; }
 
-  /* ---------- 1. Parametr ?file= (zmienna osadzona w linku) ---------- */
-  function getParam(name) {
-    var q = window.location.search.substring(1).split("&");
-    for (var i = 0; i < q.length; i++) {
-      var p = q[i].split("=");
-      if (p[0] === name && p.length > 1) {
-        try { return decodeURIComponent(p.slice(1).join("=").replace(/\+/g, " ")); }
-        catch (e) { return null; }
+      /* ---------- 1. Parametr ?file= (zmienna osadzona w linku) ---------- */
+      function getParam(name) {
+        var q = window.location.search.substring(1).split("&");
+        for (var i = 0; i < q.length; i++) {
+          var p = q[i].split("=");
+          if (p[0] === name && p.length > 1) {
+            try { return decodeURIComponent(p.slice(1).join("=").replace(/\+/g, " ")); }
+            catch (e) { return null; }
+          }
+        }
+        return null;
       }
-    }
-    return null;
-  }
-  function isSafePath(p) {
-    if (!p || p.length > 300) { return false; }
-    if (p.indexOf("..") !== -1 || p.indexOf("//") !== -1) { return false; }
-    return /^[A-Za-z0-9][A-Za-z0-9._\-\/]*\.pdf$/i.test(p);
-  }
-
-  var filePath = getParam("file");
-  if (!isSafePath(filePath)) {
-    setStatus("Brak lub niepoprawny parametr file");
-    showMessage("Nie wskazano poprawnego pliku.<br>Przykład adresu:<br>" +
-      "<code>https://mszewczy.github.io/skany/?file=legal/NAZWA-PLIKU.pdf</code>");
-    return;
-  }
-  var pdfUrl = R2_BASE + filePath;
-  var name = filePath.substring(filePath.lastIndexOf("/") + 1);
-  direct.href = pdfUrl;
-  document.title = name + " - Archiwum PDF";
-
-  /* ---------- 2. Wykrycie mozliwosci przegladarki ---------- */
-  function supportsModules() {
-    try { return "noModule" in document.createElement("script"); } catch (e) { return false; }
-  }
-  function supportsModernBuild() {
-    try {
-      return supportsModules() &&
-        typeof Promise !== "undefined" && typeof Promise.withResolvers === "function" &&
-        typeof URL !== "undefined" && typeof URL.parse === "function" &&
-        typeof Map !== "undefined" && typeof Map.prototype.getOrInsertComputed === "function";
-    } catch (e) { return false; }
-  }
-  var stages = [];
-  if (supportsModernBuild()) { stages.push("modern"); }
-  if (supportsModules())     { stages.push("legacy"); }
-
-  function fallbackDirect(reason) {
-    setStatus(reason);
-    direct.style.display = "inline";
-    showMessage(reason + "<br><br>Ta przeglądarka nie obsługuje PDF.js, więc tłumaczenie jest niedostępne. " +
-      "<a href=\"" + pdfUrl + "\" target=\"_blank\" rel=\"noopener\">Otwórz plik " + name + "</a>");
-  }
-
-  /* ---------- 3. Uruchomienie PDF.js z nadzorem ---------- */
-  function tryStage(index) {
-    if (index >= stages.length) { fallbackDirect("Nie udało się uruchomić podglądu PDF.js."); return; }
-    var version = stages[index];
-    var started = new Date().getTime();
-    var readyAt = 0;
-    setStatus("PDF.js: " + version.toUpperCase() + " - uruchamianie...");
-    frame.style.display = "block";
-    frame.src = VIEWERS[version] + "?file=" + encodeURIComponent(pdfUrl);
-
-    var timer = setInterval(function () {
-      var a = null;
-      try { a = frame.contentWindow.PDFViewerApplication; } catch (e) { a = null; }
-      var now = new Date().getTime();
-      if (a && a.pdfDocument) {
-        clearInterval(timer);
-        app = a;
-        btn.disabled = false;
-        setStatus("PDF.js: " + version.toUpperCase() + " - " + name + " (" + a.pdfDocument.numPages + " str.)");
+      function isSafePath(p) {
+        if (!p || p.length > 300) { return false; }
+        if (p.indexOf("..") !== -1 || p.indexOf("//") !== -1) { return false; }
+        if (!/\.pdf$/i.test(p)) { return false; }
+        var allowedDirs = /^(legal|nonprofit|medical)\/|^[^\/]+\.pdf$/i;
+        return allowedDirs.test(p);
+      }
+      var filePath = getParam("file");
+      if (!isSafePath(filePath)) {
+        setStatus("Brak lub niepoprawny parametr file");
+        showMessage("Nie wskazano poprawnego pliku.<br>Przykład adresu:<br>" +
+          "<code>https://mszewczy.github.io/skany/?file=legal/NAZWA-PLIKU.pdf</code>");
         return;
       }
-      if (a && a.initialized) {
-        if (!readyAt) { readyAt = now; setStatus("PDF.js: " + version.toUpperCase() + " - pobieranie pliku..."); }
-        if (now - readyAt > LOAD_TIMEOUT_MS) {
-          clearInterval(timer);
-          direct.style.display = "inline";
-          setStatus("PDF.js nie otworzył pliku (szczegóły w oknie podglądu)");
+      var pdfUrl = R2_BASE + filePath;
+      var name = filePath.substring(filePath.lastIndexOf("/") + 1);
+      direct.href = pdfUrl;
+      document.title = name + " - Archiwum PDF";
+
+      /* ---------- 2. Wykrycie mozliwosci przegladarki ---------- */
+      function supportsModules() {
+        try { return "noModule" in document.createElement("script"); } catch (e) { return false; }
+      }
+      function supportsModernBuild() {
+        try {
+          return supportsModules() &&
+            typeof Promise !== "undefined" && typeof Promise.withResolvers === "function" &&
+            typeof URL !== "undefined" && typeof URL.parse === "function" &&
+            typeof Map !== "undefined" && typeof Map.prototype.getOrInsertComputed === "function";
+        } catch (e) { return false; }
+      }
+      var stages = [];
+      if (supportsModernBuild()) { stages.push("modern"); }
+      if (supportsModules()) { stages.push("legacy"); }
+
+      function fallbackDirect(reason) {
+        setStatus(reason);
+        direct.style.display = "inline";
+        showMessage(reason + "<br><br>Ta przeglądarka nie obsługuje PDF.js, więc tłumaczenie jest niedostępne. " +
+          "<a href=\"" + pdfUrl + "\" target=\"_blank\" rel=\"noopener\">Otwórz plik " + name + "</a>");
+      }
+
+      /* ---------- 3. Uruchomienie PDF.js z nadzorem ---------- */
+      function tryStage(index) {
+        if (index >= stages.length) { fallbackDirect("Nie udało się uruchomić podglądu PDF.js."); return; }
+        var version = stages[index];
+        var started = new Date().getTime();
+        var readyAt = 0;
+        setStatus("PDF.js: " + version.toUpperCase() + " - uruchamianie...");
+        frame.style.display = "block";
+        frame.src = VIEWERS[version] + "?file=" + encodeURIComponent(pdfUrl);
+
+        var timer = setInterval(function () {
+          var a = null;
+          try { a = frame.contentWindow.PDFViewerApplication; } catch (e) { a = null; }
+          var now = new Date().getTime();
+          if (a && a.pdfDocument) {
+            clearInterval(timer);
+            app = a;
+            btn.disabled = false;
+            setStatus("PDF.js: " + version.toUpperCase() + " - " + name + " (" + a.pdfDocument.numPages + " str.)");
+            return;
+          }
+          if (a && a.initialized) {
+            if (!readyAt) { readyAt = now; setStatus("PDF.js: " + version.toUpperCase() + " - pobieranie pliku..."); }
+            if (now - readyAt > LOAD_TIMEOUT_MS) {
+              clearInterval(timer);
+              direct.style.display = "inline";
+              setStatus("PDF.js nie otworzył pliku (szczegóły w oknie podglądu)");
+            }
+            return;
+          }
+          if (now - started > START_TIMEOUT_MS) { clearInterval(timer); tryStage(index + 1); }
+        }, 500);
+      }
+
+      /* ---------- 4. Tlumaczenie ---------- */
+      /* Tekst strony z warstwy tekstowej PDF.js -> akapity */
+      function pageParagraphs(page) {
+        return page.getTextContent().then(function (tc) {
+          /* Wiersze wg wspolrzednej Y; duzy odstep pionowy = nowy akapit */
+          var lines = [], line = "", lineY = null, lineH = 10, gapBefore = 0;
+          function flush(nextY) {
+            var t = line.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
+            if (t) { lines.push({ t: t, brk: gapBefore > lineH * 1.7 }); }
+            gapBefore = (lineY !== null && nextY !== null) ? Math.abs(lineY - nextY) : 0;
+            line = "";
+          }
+          for (var i = 0; i < tc.items.length; i++) {
+            var it = tc.items[i];
+            if (typeof it.str !== "string") { continue; }
+            var y = it.transform ? it.transform[5] : lineY;
+            if (lineY !== null && Math.abs(y - lineY) > 2) { flush(y); }
+            if (it.str) { line += it.str; if (it.height) { lineH = it.height; } }
+            lineY = y;
+          }
+          flush(null);
+          var paras = [], cur = "";
+          for (var j = 0; j < lines.length; j++) {
+            var l = lines[j].t;
+            if (lines[j].brk && cur) { paras.push(cur); cur = ""; }
+            cur = cur ? (/[a-ząćęłńóśźż]-$/.test(cur) ? cur.slice(0, -1) + l : cur + " " + l) : l;
+            if (/[.!?]$/.test(l)) { paras.push(cur); cur = ""; }
+          }
+          if (cur) { paras.push(cur); }
+          return paras;
+        });
+      }
+
+      /* Dzielenie akapitu na zdania mieszczace sie w CHUNK_MAX */
+      function chunks(para) {
+        if (para.length <= CHUNK_MAX) { return [para]; }
+        var parts = para.match(/[^.!?;]+[.!?;]*\s*/g) || [para], out = [], cur = "";
+        for (var i = 0; i < parts.length; i++) {
+          if ((cur + parts[i]).length > CHUNK_MAX && cur) { out.push(cur); cur = ""; }
+          cur += parts[i];
         }
-        return;
+        if (cur) { out.push(cur); }
+        return out;
       }
-      if (now - started > START_TIMEOUT_MS) { clearInterval(timer); tryStage(index + 1); }
-    }, 500);
-  }
 
-  /* ---------- 4. Tlumaczenie ---------- */
-  /* Tekst strony z warstwy tekstowej PDF.js -> akapity */
-  function pageParagraphs(page) {
-    return page.getTextContent().then(function (tc) {
-      /* Wiersze wg wspolrzednej Y; duzy odstep pionowy = nowy akapit */
-      var lines = [], line = "", lineY = null, lineH = 10, gapBefore = 0;
-      function flush(nextY) {
-        var t = line.replace(/\s+/g, " ").replace(/^\s+|\s+$/g, "");
-        if (t) { lines.push({ t: t, brk: gapBefore > lineH * 1.7 }); }
-        gapBefore = (lineY !== null && nextY !== null) ? Math.abs(lineY - nextY) : 0;
-        line = "";
+      /* M2M100 potrafi sie zapetlic ("Disability Disability ...") - zwijamy powtorzenia */
+      function cleanRepeats(s) {
+        var prev;
+        do {
+          prev = s;
+          s = s.replace(/(\S+(?:\s+\S+){0,3}?)(?:\s+\1){2,}/g, "$1");
+        } while (s !== prev);
+        return s;
       }
-      for (var i = 0; i < tc.items.length; i++) {
-        var it = tc.items[i];
-        if (typeof it.str !== "string") { continue; }
-        var y = it.transform ? it.transform[5] : lineY;
-        if (lineY !== null && Math.abs(y - lineY) > 2) { flush(y); }
-        if (it.str) { line += it.str; if (it.height) { lineH = it.height; } }
-        lineY = y;
+
+      function translateChunk(t, src, dst, cb) {
+        var x = new XMLHttpRequest();
+        x.open("POST", WORKER_URL, true);
+        x.setRequestHeader("Content-Type", "application/json");
+        x.onreadystatechange = function () {
+          if (x.readyState !== 4) { return; }
+          var r = null;
+          try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
+          if (x.status === 200 && r && r.translated_text) { cb(null, cleanRepeats(r.translated_text)); }
+          else { cb((r && r.error) || ("HTTP " + x.status)); }
+        };
+        x.send(JSON.stringify({ text: t, sourceLang: src, targetLang: dst }));
       }
-      flush(null);
-      var paras = [], cur = "";
-      for (var j = 0; j < lines.length; j++) {
-        var l = lines[j].t;
-        if (lines[j].brk && cur) { paras.push(cur); cur = ""; }
-        cur = cur ? (/[a-ząćęłńóśźż]-$/.test(cur) ? cur.slice(0, -1) + l : cur + " " + l) : l;
-        if (/[.!?]$/.test(l)) { paras.push(cur); cur = ""; }
-      }
-      if (cur) { paras.push(cur); }
-      return paras;
-    });
-  }
 
-  /* Dzielenie akapitu na zdania mieszczace sie w CHUNK_MAX */
-  function chunks(para) {
-    if (para.length <= CHUNK_MAX) { return [para]; }
-    var parts = para.match(/[^.!?;]+[.!?;]*\s*/g) || [para], out = [], cur = "";
-    for (var i = 0; i < parts.length; i++) {
-      if ((cur + parts[i]).length > CHUNK_MAX && cur) { out.push(cur); cur = ""; }
-      cur += parts[i];
-    }
-    if (cur) { out.push(cur); }
-    return out;
-  }
+      function translateAll() {
+        if (!app || busy) { return; }
+        var src = document.getElementById("srcLang").value;
+        var dst = document.getElementById("dstLang").value;
+        if (src === dst) { alert("Wybierz różne języki."); return; }
+        busy = true; btn.disabled = true;
+        document.body.className = "split";
+        panelBody.innerHTML = "";
+        text(panelTitle, "Tłumaczenie: " + src + " → " + dst);
 
-  /* M2M100 potrafi sie zapetlic ("Disability Disability ...") - zwijamy powtorzenia */
-  function cleanRepeats(s) {
-    var prev;
-    do {
-      prev = s;
-      s = s.replace(/(\S+(?:\s+\S+){0,3}?)(?:\s+\1){2,}/g, "$1");
-    } while (s !== prev);
-    return s;
-  }
+        var doc = app.pdfDocument, pageNo = 1, total = doc.numPages, done = 0, anyText = false;
 
-  function translateChunk(t, src, dst, cb) {
-    var x = new XMLHttpRequest();
-    x.open("POST", WORKER_URL, true);
-    x.setRequestHeader("Content-Type", "application/json");
-    x.onreadystatechange = function () {
-      if (x.readyState !== 4) { return; }
-      var r = null;
-      try { r = JSON.parse(x.responseText); } catch (e) { r = null; }
-      if (x.status === 200 && r && r.translated_text) { cb(null, cleanRepeats(r.translated_text)); }
-      else { cb((r && r.error) || ("HTTP " + x.status)); }
-    };
-    x.send(JSON.stringify({ text: t, sourceLang: src, targetLang: dst }));
-  }
+        function finish(note) { busy = false; btn.disabled = false; setStatus(note); }
 
-  function translateAll() {
-    if (!app || busy) { return; }
-    var src = document.getElementById("srcLang").value;
-    var dst = document.getElementById("dstLang").value;
-    if (src === dst) { alert("Wybierz różne języki."); return; }
-    busy = true; btn.disabled = true;
-    document.body.className = "split";
-    panelBody.innerHTML = "";
-    text(panelTitle, "Tłumaczenie: " + src + " → " + dst);
-
-    var doc = app.pdfDocument, pageNo = 1, total = doc.numPages, done = 0, anyText = false;
-
-    function finish(note) { busy = false; btn.disabled = false; setStatus(note); }
-
-    function nextPage() {
-      if (pageNo > total) {
-        if (!anyText) {
-          panelBody.innerHTML = "<p>Dokument nie ma warstwy tekstowej (skan bez OCR). " +
-            "Aby tłumaczenie działało, plik PDF musi zawierać tekst (OCR).</p>";
+        function nextPage() {
+          if (pageNo > total) {
+            if (!anyText) {
+              panelBody.innerHTML = "<p>Dokument nie ma warstwy tekstowej (skan bez OCR). " +
+                "Aby tłumaczenie działało, plik PDF musi zawierać tekst (OCR).</p>";
+            }
+            finish("Tłumaczenie zakończone: " + name);
+            return;
+          }
+          var n = pageNo++;
+          doc.getPage(n).then(pageParagraphs).then(function (paras) {
+            var h = document.createElement("h2");
+            text(h, "Strona " + n);
+            panelBody.appendChild(h);
+            var queue = [];
+            for (var i = 0; i < paras.length; i++) {
+              var p = document.createElement("p");
+              panelBody.appendChild(p);
+              queue.push({ el: p, parts: chunks(paras[i]), out: [] });
+            }
+            if (queue.length) { anyText = true; }
+            runQueue(queue, 0, 0, n);
+          }, function (e) { finish("Błąd odczytu strony " + n + ": " + e); });
         }
-        finish("Tłumaczenie zakończone: " + name);
-        return;
-      }
-      var n = pageNo++;
-      doc.getPage(n).then(pageParagraphs).then(function (paras) {
-        var h = document.createElement("h2");
-        text(h, "Strona " + n);
-        panelBody.appendChild(h);
-        var queue = [];
-        for (var i = 0; i < paras.length; i++) {
-          var p = document.createElement("p");
-          panelBody.appendChild(p);
-          queue.push({ el: p, parts: chunks(paras[i]), out: [] });
+
+        function runQueue(q, qi, pi, n) {
+          if (qi >= q.length) { nextPage(); return; }
+          var item = q[qi];
+          if (pi >= item.parts.length) { runQueue(q, qi + 1, 0, n); return; }
+          done++;
+          setStatus("Tłumaczenie: strona " + n + "/" + total + ", fragment " + done + "...");
+          translateChunk(item.parts[pi], src, dst, function (err, res) {
+            item.out.push(err ? "[błąd tłumaczenia: " + err + "] " + item.parts[pi] : res);
+            text(item.el, item.out.join(" "));
+            runQueue(q, qi, pi + 1, n);
+          });
         }
-        if (queue.length) { anyText = true; }
-        runQueue(queue, 0, 0, n);
-      }, function (e) { finish("Błąd odczytu strony " + n + ": " + e); });
-    }
 
-    function runQueue(q, qi, pi, n) {
-      if (qi >= q.length) { nextPage(); return; }
-      var item = q[qi];
-      if (pi >= item.parts.length) { runQueue(q, qi + 1, 0, n); return; }
-      done++;
-      setStatus("Tłumaczenie: strona " + n + "/" + total + ", fragment " + done + "...");
-      translateChunk(item.parts[pi], src, dst, function (err, res) {
-        item.out.push(err ? "[błąd tłumaczenia: " + err + "] " + item.parts[pi] : res);
-        text(item.el, item.out.join(" "));
-        runQueue(q, qi, pi + 1, n);
-      });
-    }
+        nextPage();
+      }
 
-    nextPage();
-  }
+      btn.onclick = translateAll;
+      document.getElementById("closeBtn").onclick = function () { document.body.className = ""; };
 
-  btn.onclick = translateAll;
-  document.getElementById("closeBtn").onclick = function () { document.body.className = ""; };
-
-  tryStage(0);
-})();
-</script>
+      tryStage(0);
+    })();
+  </script>
 </body>
+
 </html>
